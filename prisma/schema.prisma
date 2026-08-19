@@ -8,15 +8,17 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(cuid())
+  id            String             @id @default(cuid())
   name          String
-  level         String         @default("Cultural Explorer")
-  sitesVisited  Int            @default(0)
-  scanCount     Int            @default(0)
+  level         String             @default("Cultural Explorer")
+  sitesVisited  Int                @default(0)
+  scanCount     Int                @default(0)
   passportId    String?
   profileImage  String?
   contributions Contribution[]
   scans         ScanHistory[]
+  discoveries   PlaceDiscovery[]
+  activities    PassportActivity[]
 }
 
 model Site {
@@ -75,6 +77,36 @@ model ScanHistory {
   confidence         Float           @default(0.85)
   inputMethod        String          @default("camera") // "camera" | "gallery" | "demo"
   createdAt          DateTime        @default(now())
+}
+
+model PlaceDiscovery {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  placeId        String
+  name           String
+  address        String?
+  rating         Float?
+  userRatingCount Int?
+  latitude       Float?
+  longitude      Float?
+  distanceKm     Float?
+  googleMapsUri  String?
+  photoUrl       String?
+  category       String   @default("cultural")
+  discoveryScore Float?   @default(0.85)
+  sourceType     String   @default("PLACES_API") // "PLACES_API" | "CURATED"
+  createdAt      DateTime @default(now())
+}
+
+model PassportActivity {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  activityType String   // "SCAN" | "SITE_VISIT" | "CONTRIBUTION" | "PLACE_DISCOVERY"
+  title        String
+  pointsEarned Int      @default(50)
+  createdAt    DateTime @default(now())
 }
 
 model CrowdSnapshot {

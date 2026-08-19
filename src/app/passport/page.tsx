@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowLeft, Award, Image as ImageIcon, Mic, Sparkles, Scan, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Award, Image as ImageIcon, Mic, Sparkles, Scan, MapPin, Compass, ExternalLink } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { PrismaClient } from '@prisma/client'
@@ -16,20 +16,27 @@ export default async function PassportPage() {
         orderBy: { createdAt: 'desc' },
         take: 5,
       },
+      discoveries: {
+        orderBy: { createdAt: 'desc' },
+      },
     },
   })
 
   const contributions = user?.contributions || []
   const scans = user?.scans || []
+  const discoveries = user?.discoveries || []
+
   const scanCount = user?.scanCount || scans.length || 0
   const sitesVisited = user?.sitesVisited || 1
   const approvedCount = contributions.filter((c) => c.status === 'APPROVED').length
+  const discoveryCount = discoveries.length
 
-  // Formula: Score = scans * 50 + sitesVisited * 100 + approvedContributions * 200
+  // Formula: Score = scans * 50 + sitesVisited * 100 + approvedContributions * 200 + savedPlaces * 100
   const scanScore = scanCount * 50
   const siteScore = sitesVisited * 100
   const contributionScore = approvedCount * 200
-  const totalScore = scanScore + siteScore + contributionScore
+  const discoveryScore = discoveryCount * 100
+  const totalScore = scanScore + siteScore + contributionScore + discoveryScore
 
   // Dynamic Badges logic based on real DB counts
   const badges = [
@@ -48,18 +55,18 @@ export default async function PassportPage() {
       desc: 'Visited 2+ sites',
     },
     {
+      name: 'LOCAL DISCOVERER',
+      earned: discoveryCount >= 1,
+      icon: <Compass size={18} className="text-white" />,
+      color: 'bg-amber-600',
+      desc: '1+ saved places',
+    },
+    {
       name: 'STORY KEEPER',
       earned: approvedCount >= 1,
       icon: <Mic size={18} className="text-white" />,
       color: 'bg-muted-green',
       desc: '1 approved oral story',
-    },
-    {
-      name: 'CULTURE DOCUMENTARIAN',
-      earned: approvedCount >= 3,
-      icon: <ImageIcon size={18} className="text-white" />,
-      color: 'bg-charcoal',
-      desc: '3+ verified stories',
     },
   ]
 
@@ -91,19 +98,23 @@ export default async function PassportPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 relative z-10 border-t border-white/10 pt-4 text-center">
+          <div className="grid grid-cols-4 gap-1 relative z-10 border-t border-white/10 pt-4 text-center">
             <div>
-              <p className="text-[9px] text-white/50 uppercase tracking-widest font-bold mb-1">Scans</p>
-              <p className="text-xl font-bold font-mono text-white">{scanCount}</p>
+              <p className="text-[8px] text-white/50 uppercase tracking-widest font-bold mb-1">Scans</p>
+              <p className="text-lg font-bold font-mono text-white">{scanCount}</p>
             </div>
             <div>
-              <p className="text-[9px] text-white/50 uppercase tracking-widest font-bold mb-1">Sites</p>
-              <p className="text-xl font-bold font-mono text-white">{sitesVisited}</p>
+              <p className="text-[8px] text-white/50 uppercase tracking-widest font-bold mb-1">Sites</p>
+              <p className="text-lg font-bold font-mono text-white">{sitesVisited}</p>
             </div>
             <div>
-              <p className="text-[9px] text-white/50 uppercase tracking-widest font-bold mb-1">Passport Score</p>
-              <p className="text-xl font-bold font-mono text-saffron-light flex items-center justify-center gap-1">
-                <Award size={16} /> {totalScore}
+              <p className="text-[8px] text-white/50 uppercase tracking-widest font-bold mb-1">Places</p>
+              <p className="text-lg font-bold font-mono text-white">{discoveryCount}</p>
+            </div>
+            <div>
+              <p className="text-[8px] text-white/50 uppercase tracking-widest font-bold mb-1">Score</p>
+              <p className="text-lg font-bold font-mono text-saffron-light flex items-center justify-center gap-0.5">
+                <Award size={14} /> {totalScore}
               </p>
             </div>
           </div>
@@ -128,6 +139,46 @@ export default async function PassportPage() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Saved Place Discoveries */}
+        <h3 className="text-sm font-bold text-charcoal uppercase tracking-wider mb-3 flex justify-between items-center">
+          <span>Saved Places & Hidden Gems</span>
+          <span className="text-[10px] text-saffron font-mono">{discoveries.length} Saved</span>
+        </h3>
+        <div className="space-y-3 mb-8">
+          {discoveries.length === 0 ? (
+            <div className="text-center p-6 bg-white rounded-2xl border border-dashed border-sandstone-dark text-charcoal-light text-xs">
+              No places saved yet. Explore heritage objects to discover nearby quieter places!
+            </div>
+          ) : (
+            discoveries.map((place) => (
+              <Card key={place.id} className="overflow-hidden border-sandstone-dark hover:shadow-md transition-shadow">
+                <CardContent className="p-3.5 flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-bold text-charcoal text-xs truncate">{place.name}</h4>
+                    <p className="text-[10px] text-charcoal-light flex items-center gap-1 mt-0.5 truncate">
+                      <MapPin size={10} /> {place.address || 'Maharashtra'}
+                    </p>
+                    <div className="flex items-center gap-2 text-[10px] font-semibold text-charcoal mt-1">
+                      <span className="text-amber-600">★ {place.rating || 4.7}</span>
+                      <span className="text-charcoal-light font-mono">{place.distanceKm || 2.4} km</span>
+                    </div>
+                  </div>
+                  {place.googleMapsUri && (
+                    <a
+                      href={place.googleMapsUri}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-9 h-9 rounded-xl bg-charcoal text-white flex items-center justify-center shrink-0 hover:bg-charcoal-light transition-colors"
+                    >
+                      <ExternalLink size={16} />
+                    </a>
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
 
         {/* Recent Scan Discoveries */}

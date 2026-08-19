@@ -5,6 +5,8 @@ async function main() {
   console.log('Seeding rich Maharashtra demo dataset for Sanskriti Yatra...')
 
   // Clear existing records to ensure clean seed
+  await prisma.passportActivity.deleteMany()
+  await prisma.placeDiscovery.deleteMany()
   await prisma.scanHistory.deleteMany()
   await prisma.contribution.deleteMany()
   await prisma.crowdSnapshot.deleteMany()
@@ -95,7 +97,6 @@ async function main() {
 
   // 4. Create 12 Heritage Objects
   const objects = [
-    // Ellora (1-7)
     {
       siteId: ellora.id,
       name: 'Kailasa Temple (Cave 16)',
@@ -153,50 +154,6 @@ async function main() {
       relatedTraditionId: rockCutCraft.id,
     },
     {
-      siteId: ellora.id,
-      name: 'Buddhist Vihara Monastery (Cave 12)',
-      category: 'architecture',
-      period: '700–750 CE',
-      culturalSignificance: 'Known as "Tin Tala", a rare three-story rock-cut university complex where hundreds of monk-scholars lived and studied.',
-      architecturalNote: 'Massive square pillars supporting open courtyards with row of meditative Buddha niches on each level.',
-      historicalContext: 'One of the largest monastic educational centers of ancient Western India.',
-      observedFeatures: JSON.stringify(['Three-storey facade', 'Monastic cells', 'Symmetrical pillared hall']),
-      imageUrls: JSON.stringify(['https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Ellora_cave12_01.jpg/800px-Ellora_cave12_01.jpg']),
-      keywords: JSON.stringify(['tin tala', 'vihara', 'cave 12', 'monastery', 'ellora']),
-      confidence: 0.87,
-      relatedTraditionId: rockCutCraft.id,
-    },
-    {
-      siteId: ellora.id,
-      name: 'Rock-Cut Monolithic Dhvajastambha Pillar',
-      category: 'architecture',
-      period: '8th Century CE',
-      culturalSignificance: 'A 110-foot tall victory column standing independently in the court of Kailasa Temple, carved out of the single rock mass.',
-      architecturalNote: 'Ornamental capitals, geometric molding, and carved lotus band embellishments.',
-      historicalContext: 'Served as ritual victory pillar and cosmic axis marker (Axis Mundi).',
-      observedFeatures: JSON.stringify(['Freestanding stone column', 'Geometric carvings', 'Basalt monolith']),
-      imageUrls: JSON.stringify(['https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/Ellora_Kailasa_pillar.jpg/800px-Ellora_Kailasa_pillar.jpg']),
-      keywords: JSON.stringify(['pillar', 'column', 'dhvajastambha', 'kailasa', 'ellora']),
-      confidence: 0.90,
-      relatedTraditionId: rockCutCraft.id,
-    },
-    {
-      siteId: ellora.id,
-      name: 'Gajendra Moksha Decorative Carving',
-      category: 'sculpture',
-      period: '8th Century CE',
-      culturalSignificance: 'Intricate decorative relief band depicting sacred elephants and mythical lotus flowers surrounding the base of Cave 16.',
-      architecturalNote: 'High-relief animal frieze displaying anatomical dynamism and decorative rhythm.',
-      historicalContext: 'Carved to visually carry the weight of the central shrine on the backs of royal elephants.',
-      observedFeatures: JSON.stringify(['Elephant frieze', 'Lotus decorative band', 'Rock relief panel']),
-      imageUrls: JSON.stringify(['https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Ellora_elephant_frieze.jpg/800px-Ellora_elephant_frieze.jpg']),
-      keywords: JSON.stringify(['gajendra', 'elephant', 'carving', 'frieze', 'ellora']),
-      confidence: 0.86,
-      relatedTraditionId: rockCutCraft.id,
-    },
-
-    // Ajanta (8-10)
-    {
       siteId: ajanta.id,
       name: 'Padmapani Bodhisattva Mural (Cave 1)',
       category: 'mural',
@@ -211,61 +168,17 @@ async function main() {
       relatedTraditionId: muralPainting.id,
     },
     {
-      siteId: ajanta.id,
-      name: 'Seated Buddha Sculpture in Shrine (Cave 26)',
-      category: 'sculpture',
-      period: '5th Century CE',
-      culturalSignificance: 'Colossal image of Lord Buddha in Pralambapadasana (seated on throne with feet down) flanked by attendant Bodhisattvas.',
-      architecturalNote: 'Surrounded by elaborate rock carvings of celestial musicians and lotus halos.',
-      historicalContext: 'Located in the grand Chaitya Cave 26, famous also for the 29ft Mahaparinirvana reclining Buddha.',
-      observedFeatures: JSON.stringify(['Throne seated Buddha', 'Halo halo carving', 'Attendant Bodhisattvas', 'Chaitya sanctuary']),
-      imageUrls: JSON.stringify(['https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Ajanta_Cave_26_Buddha.jpg/800px-Ajanta_Cave_26_Buddha.jpg']),
-      keywords: JSON.stringify(['buddha', 'cave 26', 'ajanta', 'seated buddha', 'shrine']),
-      confidence: 0.92,
-      relatedTraditionId: muralPainting.id,
-    },
-    {
-      siteId: ajanta.id,
-      name: 'Chaitya Stupa Architecture (Cave 19)',
-      category: 'architecture',
-      period: '5th Century CE',
-      culturalSignificance: 'The most exquisite worship sanctuary at Ajanta, featuring a high arched horseshoe facade (Gandharvakara window) and standing Buddha carved directly on the stupa.',
-      architecturalNote: 'Richly decorated facade with Buddha figures in niches and ornate interior stone columns with umbrella stupa top.',
-      historicalContext: 'Considered the architectural model for classical Buddhist sanctuaries across East Asia.',
-      observedFeatures: JSON.stringify(['Horseshoe arch facade', 'Standing Buddha stupa', 'Fluted stone pillars']),
-      imageUrls: JSON.stringify(['https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Ajanta_Cave_19_Facade.jpg/800px-Ajanta_Cave_19_Facade.jpg']),
-      keywords: JSON.stringify(['chaitya', 'cave 19', 'stupa', 'ajanta', 'arch facade']),
-      confidence: 0.90,
-      relatedTraditionId: muralPainting.id,
-    },
-
-    // Paithan (11-12)
-    {
       siteId: paithan.id,
       name: 'Paithani Peacock Silk Saree Tapestry',
       category: 'textile',
       period: 'Living Tradition (Satavahana origin to modern)',
       culturalSignificance: 'The "Queen of Silks", featuring pure gold zari thread woven with mulberry silk to create iridescent peacock (Mor) and parrot (Popat) pallu borders.',
       architecturalNote: 'Double-tapestry handloom weaving technique where front and back designs look identical.',
-      historicalContext: 'Exported to ancient Rome and Greece in Satavahana times (200 BCE) in exchange for gold gold coins.',
+      historicalContext: 'Exported to ancient Rome and Greece in Satavahana times (200 BCE) in exchange for gold coins.',
       observedFeatures: JSON.stringify(['Gold zari thread', 'Peacock pallu motif', 'Pure silk texture', 'Iridescent weave', 'Mor-popat pattern']),
       imageUrls: JSON.stringify(['https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Paithani_Saree_Border.jpg/800px-Paithani_Saree_Border.jpg']),
       keywords: JSON.stringify(['paithani', 'saree', 'silk', 'peacock', 'zari', 'paithan', 'textile', 'weaving']),
       confidence: 0.95,
-      relatedTraditionId: paithaniWeaving.id,
-    },
-    {
-      siteId: paithan.id,
-      name: 'Traditional Wooden Pit-Loom Shuttle',
-      category: 'craft',
-      period: 'Living Tradition',
-      culturalSignificance: 'Handmade wooden loom apparatus with bamboo shuttles and silk thread spools used by master weavers in Paithan to weave intricate geometric pallu motifs.',
-      architecturalNote: 'Manual foot-pedal treadle mechanism requiring synchronized hand-eye movement.',
-      historicalContext: 'Preserved by traditional artisan guilds in Paithan village for over two millennia.',
-      observedFeatures: JSON.stringify(['Wooden loom shuttle', 'Silk yarn spools', 'Handloom treadle frame']),
-      imageUrls: JSON.stringify(['https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Handloom_weaving_shuttle.jpg/800px-Handloom_weaving_shuttle.jpg']),
-      keywords: JSON.stringify(['loom', 'shuttle', 'handloom', 'weaving', 'paithan', 'artisan']),
-      confidence: 0.88,
       relatedTraditionId: paithaniWeaving.id,
     },
   ]
@@ -274,15 +187,12 @@ async function main() {
     await prisma.heritageObject.create({ data: obj })
   }
 
-  // 5. Create Crowd Snapshots (Historical sequence for live demo charts)
+  // 5. Create Crowd Snapshots
   const now = new Date()
   const hours = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22]
-  
   for (const h of hours) {
     const timestamp = new Date(now.valueOf() - (24 - h) * 60 * 60 * 1000)
-    
-    // Ellora: High crowd peak during daytime (12pm-4pm)
-    const elloraCount = h >= 10 && h <= 16 ? 8420 + Math.floor(Math.random() * 500) : 3200 + Math.floor(Math.random() * 400)
+    const elloraCount = h >= 10 && h <= 16 ? 8420 + Math.floor(Math.random() * 500) : 3200
     await prisma.crowdSnapshot.create({
       data: {
         siteId: ellora.id,
@@ -292,22 +202,10 @@ async function main() {
         status: elloraCount > 7500 ? 'HIGH_CROWD' : 'NORMAL',
       }
     })
-
-    // Paithan: Consistently comfortable crowd
-    const paithanCount = 400 + Math.floor(Math.random() * 150)
-    await prisma.crowdSnapshot.create({
-      data: {
-        siteId: paithan.id,
-        timestamp,
-        visitorCount: paithanCount,
-        threshold: 3000,
-        status: 'NORMAL',
-      }
-    })
   }
 
   // 6. Create Seed Contributions
-  const approvedContribution = await prisma.contribution.create({
+  await prisma.contribution.create({
     data: {
       userId: demoUser.id,
       siteId: paithan.id,
@@ -323,44 +221,46 @@ async function main() {
       status: 'APPROVED',
       latitude: 19.4784,
       longitude: 75.3792,
-      metadata: JSON.stringify(['craft', 'weaving', 'family_heritage', 'paithani']),
     }
   })
 
-  await prisma.contribution.create({
+  // 7. Create Seed Saved Place Discoveries
+  await prisma.placeDiscovery.create({
     data: {
       userId: demoUser.id,
-      siteId: ellora.id,
-      traditionId: rockCutCraft.id,
-      title: 'Oral Legend of the Kailasa Sculptors',
-      type: 'audio_story',
-      audioUrl: '/demo-audio-2.mp3',
-      transcript: 'Local elders tell that when King Krishna falling ill promised to build the temple, Chief Architect Kokasa carved the shikhara first in 7 days to fulfill the vow.',
-      translation: 'Local elders tell that when King Krishna falling ill promised to build the temple, Chief Architect Kokasa carved the shikhara first in 7 days to fulfill the vow.',
-      originalLanguage: 'mr',
-      targetLanguage: 'en',
-      language: 'Marathi',
-      status: 'PENDING',
-      latitude: 20.0268,
-      longitude: 75.1771,
-      metadata: JSON.stringify(['legend', 'kailasa', 'oral_history']),
+      placeId: 'ChIJz2x3a_pa1zsRq9x-001',
+      name: 'Paithan Handloom Silk Weaving Cluster',
+      address: 'Near Jayakwadi Dam Road, Paithan 431107',
+      rating: 4.8,
+      userRatingCount: 64,
+      latitude: 19.4784,
+      longitude: 75.3792,
+      distanceKm: 2.4,
+      googleMapsUri: 'https://maps.google.com/?q=Paithan+Handloom+Silk+Weaving',
+      category: 'living_craft',
+      discoveryScore: 0.92,
+      sourceType: 'CURATED',
     }
   })
 
-  // 7. Create Initial Scan History
-  const kailasaObj = await prisma.heritageObject.findFirst({ where: { name: { contains: 'Kailasa' } } })
-  if (kailasaObj) {
-    await prisma.scanHistory.create({
-      data: {
-        userId: demoUser.id,
-        identifiedObjectId: kailasaObj.id,
-        siteId: ellora.id,
-        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Ellora_Caves_-_Kailasanatha_Temple_-_01.jpg/800px-Ellora_Caves_-_Kailasanatha_Temple_-_01.jpg',
-        confidence: 0.96,
-        inputMethod: 'camera',
-      }
-    })
-  }
+  // 8. Create Passport Activities
+  await prisma.passportActivity.create({
+    data: {
+      userId: demoUser.id,
+      activityType: 'SCAN',
+      title: 'Scanned Kailasa Temple',
+      pointsEarned: 50,
+    }
+  })
+
+  await prisma.passportActivity.create({
+    data: {
+      userId: demoUser.id,
+      activityType: 'PLACE_DISCOVERY',
+      title: 'Discovered Paithan Handloom Cluster',
+      pointsEarned: 100,
+    }
+  })
 
   console.log('✅ Sanskriti Yatra rich database seeded successfully!')
 }
