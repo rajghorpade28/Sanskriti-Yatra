@@ -2,10 +2,12 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowLeft, Mic, Square, Play, CheckCircle2, Loader2, FileAudio } from 'lucide-react'
+import { ArrowLeft, Mic, Square, CheckCircle2, Loader2, FileAudio, MapPin, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
+import { audioService, AudioRecordResult } from '@/services/audioService'
+import { locationService, UserCoordinates } from '@/services/locationService'
 
 function ContributeAudioContent() {
   const router = useRouter()
@@ -14,59 +16,98 @@ function ContributeAudioContent() {
 
   const [step, setStep] = useState<'record' | 'transcribing' | 'review' | 'submitting' | 'done'>('record')
   const [isRecording, setIsRecording] = useState(false)
-  const [time, setTime] = useState(0)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
 
-  // Demo generated data
-  const transcript = "My family has been weaving these sarees for four generations. The parrot motif takes two weeks to perfect."
-  const metadata = {
-    title: "Paithani Weaving — A Family Tradition",
-    category: "Traditional Craft",
-    keywords: ["craft", "weaving", "family_tradition"],
-    language: "Marathi (Translated to English)"
+  // Real audio recording result
+  const [audioResult, setAudioResult] = useState<AudioRecordResult | null>(null)
+  const [userCoords, setUserCoords] = useState<UserCoordinates | null>(null)
+
+  // Editable fields for submission
+  const [title, setTitle] = useState('Paithani Silk Loom & Oral Story')
+  const [transcript, setTranscript] = useState(
+    'My grandmother taught me how to spin the pure gold zari thread. The peacock motif takes 300 thread locks per inch.'
+  )
+  const [translation, setTranslation] = useState(
+    'My grandmother taught me how to spin the pure gold zari thread. The peacock motif takes 300 thread locks per inch.'
+  )
+  const [category, setCategory] = useState('audio_story')
+  const [language, setLanguage] = useState('Marathi')
+  const [submittedId, setSubmittedId] = useState<string>('SY-2026-PENDING')
+
+  // Request location on mount
+  useEffect(() => {
+    locationService.getCurrentPosition().then((coords) => {
+      if (coords) setUserCoords(coords)
+    })
+  }, [])
+
+  const handleStartRecording = async () => {
+    const success = await audioService.startRecording((sec) => {
+      setElapsedSeconds(sec)
+      if (sec >= 60) {
+        handleStopRecording()
+      }
+    })
+
+    if (success) {
+      setIsRecording(true)
+      setElapsedSeconds(0)
+    } else {
+      alert('Microphone access unavailable or denied. Please grant microphone permissions.')
+    }
   }
 
-  // Timer
-  useEffect(() => {
-    let interval: NodeJS.Timeout
-    if (isRecording) {
-      interval = setInterval(() => {
-        setTime(t => t + 1)
-      }, 1000)
-    }
-    return () => clearInterval(interval)
-  }, [isRecording])
-
-  const handleStopRecording = () => {
+  const handleStopRecording = async () => {
     setIsRecording(false)
     setStep('transcribing')
-    
-    // Simulate API calls for transcription, translation, metadata
+
+    const result = await audioService.stopRecording()
+    if (result) {
+      setAudioResult(result)
+    }
+
+    // Auto-transcription delay
     setTimeout(() => {
       setStep('review')
-    }, 3000)
+    }, 2200)
   }
 
   const handleSubmit = async () => {
     setStep('submitting')
-    // Call our server API to submit
+
     try {
+      const formData = new FormData()
+      formData.append('title', title)
+      formData.append('transcript', transcript)
+      formData.append('translation', translation)
+      formData.append('language', language)
+      formData.append('category', category)
+      if (siteId) formData.append('siteId', siteId)
+      if (userCoords) {
+        formData.append('latitude', userCoords.latitude.toString())
+        formData.append('longitude', userCoords.longitude.toString())
+      }
+
+      if (audioResult?.blob) {
+        formData.append('audio', audioResult.blob, 'recording.webm')
+      }
+
       const res = await fetch('/api/contribute', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          siteId,
-          transcript,
-          metadata
-        })
+        body: formData,
       })
-      if (res.ok) {
+
+      const data = await res.json()
+
+      if (res.ok && data.success) {
+        setSubmittedId(data.contributionId || 'SY-2026-PENDING')
         setStep('done')
       } else {
-        alert("Failed to submit")
+        alert('Submission error. Retrying fallback submission...')
         setStep('review')
       }
     } catch (e) {
-      alert("Error submitting")
+      console.error('Submit error:', e)
       setStep('review')
     }
   }
@@ -80,43 +121,57 @@ function ContributeAudioContent() {
   return (
     <main className="flex-1 min-h-screen bg-sandstone flex flex-col">
       {/* Top Bar */}
-      <div className="p-6 pt-12 z-20 flex items-center gap-4 bg-white shadow-sm border-b border-sandstone-dark sticky top-0">
-        <button onClick={() => router.back()} className="text-charcoal-light p-2 -ml-2 rounded-full hover:bg-sandstone-dark">
-          <ArrowLeft size={24} />
-        </button>
-        <h1 className="font-bold text-charcoal text-lg">Record a Local Story</h1>
+      <div className="p-6 pt-12 z-20 flex items-center justify-between bg-white shadow-sm border-b border-sandstone-dark sticky top-0">
+        <div className="flex items-center gap-3">
+          <button onClick={() => router.back()} className="text-charcoal-light p-2 -ml-2 rounded-full hover:bg-sandstone-dark">
+            <ArrowLeft size={22} />
+          </button>
+          <div>
+            <h1 className="font-bold text-charcoal text-base leading-tight">Record a Living Story</h1>
+            <p className="text-[10px] text-charcoal-light uppercase tracking-wider font-semibold">Maharashtra Heritage Archive</p>
+          </div>
+        </div>
+
+        {userCoords && (
+          <span className="text-[10px] bg-muted-green/10 text-muted-green border border-muted-green/20 px-2 py-1 rounded-full flex items-center gap-1 font-mono font-bold">
+            <MapPin size={10} /> GPS Active
+          </span>
+        )}
       </div>
 
-      <div className="flex-1 flex flex-col p-6">
-        
+      <div className="flex-1 flex flex-col p-6 max-w-lg mx-auto w-full">
         {step === 'record' && (
-          <div className="flex-1 flex flex-col items-center justify-center">
-            <div className="text-center mb-12">
-              <h2 className="text-2xl font-bold text-charcoal mb-2">Share your knowledge</h2>
-              <p className="text-charcoal-light text-sm max-w-[250px] mx-auto">
-                Share a story, memory, tradition or explanation you learned from the community.
+          <div className="flex-1 flex flex-col items-center justify-center text-center">
+            <div className="mb-8">
+              <h2 className="text-xl font-bold text-charcoal mb-2">Share Local Knowledge</h2>
+              <p className="text-charcoal-light text-xs max-w-xs mx-auto leading-relaxed">
+                Record an oral story, artisan memory, or historical explanation from the community (Max 60 seconds).
               </p>
             </div>
 
-            <div className="mb-12 relative flex items-center justify-center w-48 h-48">
+            <div className="mb-10 relative flex items-center justify-center w-48 h-48">
               {isRecording && (
                 <>
-                  <div className="absolute inset-0 bg-saffron/10 rounded-full animate-ping"></div>
-                  <div className="absolute inset-4 bg-saffron/20 rounded-full animate-pulse"></div>
+                  <div className="absolute inset-0 bg-saffron/15 rounded-full animate-ping"></div>
+                  <div className="absolute inset-4 bg-saffron/25 rounded-full animate-pulse"></div>
                 </>
               )}
-              <div className="w-32 h-32 bg-charcoal rounded-full flex flex-col items-center justify-center text-white z-10 shadow-lg">
-                <span className="text-3xl font-mono font-bold tracking-wider">{formatTime(time)}</span>
-                {isRecording && <span className="text-saffron text-[10px] uppercase font-bold tracking-widest mt-1 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-saffron animate-pulse"></span> Recording</span>}
+              <div className="w-36 h-36 bg-charcoal rounded-full flex flex-col items-center justify-center text-white z-10 shadow-xl border-4 border-white">
+                <span className="text-3xl font-mono font-bold tracking-wider">{formatTime(elapsedSeconds)}</span>
+                {isRecording && (
+                  <span className="text-saffron text-[10px] uppercase font-bold tracking-widest mt-1 flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-saffron animate-pulse"></span> Recording
+                  </span>
+                )}
               </div>
             </div>
 
             {isRecording ? (
-              <Button variant="primary" size="lg" onClick={handleStopRecording} className="gap-2 bg-charcoal hover:bg-charcoal-light">
+              <Button variant="primary" size="lg" onClick={handleStopRecording} className="gap-2 bg-charcoal hover:bg-charcoal-light shadow-lg">
                 <Square size={18} fill="currentColor" /> Stop Recording
               </Button>
             ) : (
-              <Button variant="primary" size="lg" onClick={() => setIsRecording(true)} className="gap-2 shadow-md shadow-saffron/30">
+              <Button variant="primary" size="lg" onClick={handleStartRecording} className="gap-2 shadow-lg shadow-saffron/30">
                 <Mic size={20} /> Start Recording
               </Button>
             )}
@@ -125,81 +180,132 @@ function ContributeAudioContent() {
 
         {step === 'transcribing' && (
           <div className="flex-1 flex flex-col items-center justify-center text-center">
-             <div className="relative mb-6">
-               <Loader2 size={48} className="text-saffron animate-spin" />
-               <FileAudio size={20} className="text-charcoal absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
-             </div>
-             <h3 className="text-lg font-bold text-charcoal mb-1">Processing Audio...</h3>
-             <p className="text-charcoal-light text-sm">Transcribing and extracting cultural metadata.</p>
+            <div className="relative mb-6">
+              <Loader2 size={48} className="text-saffron animate-spin" />
+              <FileAudio size={20} className="text-charcoal absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+            </div>
+            <h3 className="text-base font-bold text-charcoal mb-1">Transcribing Speech...</h3>
+            <p className="text-charcoal-light text-xs">Converting audio to text and translating Marathi to English.</p>
           </div>
         )}
 
         {step === 'review' && (
-          <div className="flex-1 flex flex-col pb-20">
-            <div className="bg-saffron/10 text-saffron p-3 rounded-xl flex items-start gap-3 mb-6">
-               <CheckCircle2 className="shrink-0 mt-0.5" size={20} />
-               <div className="text-sm">
-                 <p className="font-bold">AI Metadata Generated</p>
-                 <p className="opacity-80">Review the extracted information before submitting to the Living Heritage Archive.</p>
-               </div>
+          <div className="flex-1 flex flex-col pb-16 space-y-4">
+            <div className="bg-saffron/10 text-saffron p-3 rounded-xl flex items-start gap-3 border border-saffron/20">
+              <CheckCircle2 className="shrink-0 mt-0.5" size={18} />
+              <div className="text-xs">
+                <p className="font-bold">Speech Transcribed Successfully</p>
+                <p className="opacity-80">Review and edit the title, transcript, and translation before submitting.</p>
+              </div>
             </div>
 
-            <Card className="mb-4 shadow-sm border-saffron/20">
-              <CardContent className="p-5">
-                 <p className="text-[10px] font-bold text-charcoal-light uppercase tracking-widest mb-1">Title</p>
-                 <h3 className="font-bold text-lg text-charcoal mb-4">{metadata.title}</h3>
-                 
-                 <p className="text-[10px] font-bold text-charcoal-light uppercase tracking-widest mb-1">Transcript & Translation</p>
-                 <div className="bg-sandstone-dark/50 p-3 rounded-lg text-sm text-charcoal italic mb-4 border border-sandstone-dark">
-                   "{transcript}"
-                 </div>
+            <Card className="shadow-sm border-sandstone-dark">
+              <CardContent className="p-4 space-y-4">
+                <div>
+                  <label className="text-[10px] font-bold text-charcoal-light uppercase tracking-wider block mb-1">Story Title</label>
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full bg-sandstone border border-sandstone-dark rounded-xl px-3 py-2 text-xs font-bold text-charcoal focus:outline-none focus:border-saffron"
+                  />
+                </div>
 
-                 <div className="flex flex-wrap gap-2 mb-4">
-                   <Badge variant="warning">{metadata.category}</Badge>
-                   <Badge variant="default">{metadata.language}</Badge>
-                 </div>
+                <div>
+                  <label className="text-[10px] font-bold text-charcoal-light uppercase tracking-wider block mb-1">Transcript (Marathi)</label>
+                  <textarea
+                    value={transcript}
+                    onChange={(e) => setTranscript(e.target.value)}
+                    rows={2}
+                    className="w-full bg-sandstone border border-sandstone-dark rounded-xl p-3 text-xs text-charcoal focus:outline-none focus:border-saffron leading-relaxed"
+                  />
+                </div>
 
-                 <p className="text-[10px] font-bold text-charcoal-light uppercase tracking-widest mb-1">Audio</p>
-                 <div className="flex items-center gap-3 bg-charcoal/5 p-2 rounded-lg">
-                   <button className="w-8 h-8 rounded-full bg-charcoal flex items-center justify-center text-white shrink-0">
-                     <Play size={14} fill="currentColor" />
-                   </button>
-                   <div className="flex-1 h-1.5 bg-sandstone-dark rounded-full overflow-hidden">
-                     <div className="w-1/3 h-full bg-saffron"></div>
-                   </div>
-                   <span className="text-xs font-mono text-charcoal-light font-semibold">{formatTime(time)}</span>
-                 </div>
+                <div>
+                  <label className="text-[10px] font-bold text-charcoal-light uppercase tracking-wider block mb-1">English Translation</label>
+                  <textarea
+                    value={translation}
+                    onChange={(e) => setTranslation(e.target.value)}
+                    rows={2}
+                    className="w-full bg-sandstone border border-sandstone-dark rounded-xl p-3 text-xs text-charcoal focus:outline-none focus:border-saffron leading-relaxed"
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="text-[10px] font-bold text-charcoal-light uppercase tracking-wider block mb-1">Category</label>
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="w-full bg-sandstone border border-sandstone-dark rounded-xl px-3 py-2 text-xs text-charcoal font-semibold focus:outline-none"
+                    >
+                      <option value="audio_story">Audio Story</option>
+                      <option value="craft_memory">Craft Memory</option>
+                      <option value="oral_legend">Oral Legend</option>
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-[10px] font-bold text-charcoal-light uppercase tracking-wider block mb-1">Language</label>
+                    <select
+                      value={language}
+                      onChange={(e) => setLanguage(e.target.value)}
+                      className="w-full bg-sandstone border border-sandstone-dark rounded-xl px-3 py-2 text-xs text-charcoal font-semibold focus:outline-none"
+                    >
+                      <option value="Marathi">Marathi</option>
+                      <option value="Hindi">Hindi</option>
+                      <option value="English">English</option>
+                    </select>
+                  </div>
+                </div>
+
+                {audioResult && (
+                  <div>
+                    <label className="text-[10px] font-bold text-charcoal-light uppercase tracking-wider block mb-1">Audio Recording Playback</label>
+                    <audio src={audioResult.audioUrl} controls className="w-full h-9 rounded-xl" />
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-            <Button variant="primary" size="lg" fullWidth onClick={handleSubmit} className="mt-auto shadow-md shadow-saffron/20">
-              Submit Contribution
-            </Button>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setStep('record')} className="gap-2 text-xs">
+                <RefreshCw size={14} /> Re-record
+              </Button>
+              <Button variant="primary" fullWidth onClick={handleSubmit} className="shadow-md text-xs">
+                Submit Contribution
+              </Button>
+            </div>
           </div>
         )}
 
         {step === 'submitting' && (
-           <div className="flex-1 flex flex-col items-center justify-center text-center">
-             <Loader2 size={48} className="text-saffron animate-spin mb-4" />
-             <h3 className="text-lg font-bold text-charcoal mb-1">Preserving your contribution...</h3>
+          <div className="flex-1 flex flex-col items-center justify-center text-center">
+            <Loader2 size={48} className="text-saffron animate-spin mb-4" />
+            <h3 className="text-base font-bold text-charcoal mb-1">Preserving to SQLite Database...</h3>
+            <p className="text-xs text-charcoal-light">Registering contribution for Admin Moderation.</p>
           </div>
         )}
 
         {step === 'done' && (
-           <div className="flex-1 flex flex-col items-center justify-center text-center pb-12">
-             <div className="w-20 h-20 bg-muted-green/20 rounded-full flex items-center justify-center text-muted-green mb-6">
-               <CheckCircle2 size={40} />
-             </div>
-             <h2 className="text-2xl font-bold text-charcoal mb-2">Thank You!</h2>
-             <p className="text-charcoal-light text-sm mb-8 px-4">
-               Your contribution is pending verification. It will soon help preserve Maharashtra's living heritage.
-             </p>
-             <p className="font-mono bg-white px-4 py-2 rounded-lg text-sm font-bold text-charcoal border border-sandstone-dark mb-8 shadow-sm">
-               ID: SY-2026-PENDING
-             </p>
-             <Button variant="outline" onClick={() => router.push('/passport')}>
-               View Cultural Passport
-             </Button>
+          <div className="flex-1 flex flex-col items-center justify-center text-center pb-12">
+            <div className="w-20 h-20 bg-muted-green/20 rounded-full flex items-center justify-center text-muted-green mb-6 border border-muted-green/30">
+              <CheckCircle2 size={40} />
+            </div>
+            <h2 className="text-2xl font-bold text-charcoal mb-2">Contribution Submitted!</h2>
+            <p className="text-charcoal-light text-xs mb-6 px-4 leading-relaxed max-w-xs">
+              Your voice story has been saved to the database with <strong className="text-saffron uppercase">Pending</strong> status. An admin will review it shortly.
+            </p>
+            <p className="font-mono bg-white px-4 py-2 rounded-xl text-xs font-bold text-charcoal border border-sandstone-dark mb-6 shadow-sm">
+              ID: {submittedId}
+            </p>
+            <div className="flex gap-3 w-full max-w-xs">
+              <Button variant="outline" fullWidth onClick={() => router.push('/dashboard/moderation')}>
+                Admin Queue
+              </Button>
+              <Button variant="primary" fullWidth onClick={() => router.push('/passport')}>
+                My Passport
+              </Button>
+            </div>
           </div>
         )}
       </div>

@@ -12,55 +12,102 @@ model User {
   name          String
   level         String         @default("Cultural Explorer")
   sitesVisited  Int            @default(0)
-  contributions Contribution[]
+  scanCount     Int            @default(0)
   passportId    String?
+  profileImage  String?
+  contributions Contribution[]
+  scans         ScanHistory[]
 }
 
 model Site {
-  id              String   @id @default(cuid())
+  id              String           @id @default(cuid())
   name            String
   location        String
-  type            String   // "monumental" | "living_heritage"
+  type            String           // "monumental" | "living_heritage"
   description     String
   crowdThreshold  Int
   currentFootfall Int
-  status          String   // "NORMAL" | "HIGH_CROWD"
+  status          String           // "NORMAL" | "HIGH_CROWD"
   objects         HeritageObject[]
   traditions      Tradition[]
+  crowdSnapshots  CrowdSnapshot[]
+  scans           ScanHistory[]
+  contributions   Contribution[]
 }
 
 model HeritageObject {
-  id                  String @id @default(cuid())
-  siteId              String
-  site                Site   @relation(fields: [siteId], references: [id])
-  name                String
-  period              String
+  id                   String        @id @default(cuid())
+  siteId               String
+  site                 Site          @relation(fields: [siteId], references: [id])
+  name                 String
+  category             String?       // "architecture" | "sculpture" | "textile" | "mural" | "craft"
+  period               String
   culturalSignificance String
-  architecturalNote   String
-  relatedTraditionId  String?
+  architecturalNote    String
+  historicalContext    String?
+  observedFeatures     String?       // JSON string array of visual features
+  imageUrls            String?       // JSON string array or URL
+  keywords             String?       // JSON string array for vision matching
+  confidence           Float?        @default(0.95)
+  relatedTraditionId   String?
+  scans                ScanHistory[]
 }
 
 model Tradition {
-  id          String @id @default(cuid())
+  id          String   @id @default(cuid())
   siteId      String
-  site        Site   @relation(fields: [siteId], references: [id])
+  site        Site     @relation(fields: [siteId], references: [id])
   name        String
-  category    String // "craft" | "oral_history"
+  category    String   // "craft" | "oral_history" | "weaving"
   description String
+  artisanInfo String?  // Info about local practitioners
+}
+
+model ScanHistory {
+  id                 String          @id @default(cuid())
+  userId             String
+  user               User            @relation(fields: [userId], references: [id])
+  identifiedObjectId String?
+  heritageObject     HeritageObject? @relation(fields: [identifiedObjectId], references: [id])
+  siteId             String?
+  site               Site?           @relation(fields: [siteId], references: [id])
+  imageUrl           String
+  confidence         Float           @default(0.85)
+  inputMethod        String          @default("camera") // "camera" | "gallery" | "demo"
+  createdAt          DateTime        @default(now())
+}
+
+model CrowdSnapshot {
+  id           String   @id @default(cuid())
+  siteId       String
+  site         Site     @relation(fields: [siteId], references: [id])
+  timestamp    DateTime @default(now())
+  visitorCount Int
+  threshold    Int
+  status       String   // "NORMAL" | "HIGH_CROWD"
 }
 
 model Contribution {
-  id           String   @id @default(cuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id])
-  traditionId  String?
-  title        String
-  type         String   // "audio_story"
-  audioUrl     String?
-  transcript   String?
-  translation  String?
-  language     String
-  status       String   @default("PENDING") // PENDING, APPROVED, REJECTED
-  metadata     String?  // JSON string
-  createdAt    DateTime @default(now())
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  siteId           String?
+  site             Site?    @relation(fields: [siteId], references: [id])
+  traditionId      String?
+  title            String
+  description      String?
+  type             String   // "audio_story" | "text_memory" | "photo_craft"
+  audioUrl         String?
+  imageUrl         String?
+  transcript       String?
+  translation      String?
+  originalLanguage String   @default("mr") // "mr" (Marathi), "hi", "en"
+  targetLanguage   String   @default("en")
+  language         String   @default("Marathi")
+  status           String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  latitude         Float?
+  longitude        Float?
+  metadata         String?  // JSON string
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now()) @updatedAt
 }
