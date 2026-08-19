@@ -1,69 +1,129 @@
-import Image from "next/image";
+import Link from 'next/link'
+import { Bell, MapPin, ScanLine, Camera, ChevronRight, BookOpen } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
+import { PrismaClient } from '@prisma/client'
 
-export default function Home() {
+const prisma = new PrismaClient()
+
+export default async function Home() {
+  // Fetch sites and user stats from DB
+  const sites = await prisma.site.findMany({
+    take: 3,
+    orderBy: { type: 'desc' } // Just to get monumental then living_heritage roughly
+  })
+  
+  const user = await prisma.user.findFirst({
+    include: {
+      contributions: true
+    }
+  })
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="flex-1 pb-6">
+      {/* Header */}
+      <header className="flex justify-between items-center p-6 pt-12 pb-4 bg-sandstone sticky top-0 z-10">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-charcoal">SANSKRITI YATRA</h1>
+          <p className="text-xs font-semibold tracking-widest text-charcoal-light uppercase mt-0.5">Explore. Learn. Preserve.</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div className="flex gap-4">
+          <button className="text-charcoal-light relative">
+            <MapPin size={22} />
+          </button>
+          <button className="text-charcoal-light relative">
+            <Bell size={22} />
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-saffron rounded-full"></span>
+          </button>
         </div>
-      </main>
-    </div>
-  );
+      </header>
+
+      {/* Hero / Scanner CTA */}
+      <section className="px-6 py-6">
+        <div className="bg-charcoal rounded-3xl p-8 text-white relative overflow-hidden shadow-lg">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-saffron/20 rounded-full blur-3xl -mr-20 -mt-20"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-muted-green/20 rounded-full blur-3xl -ml-10 -mb-10"></div>
+          
+          <div className="relative z-10">
+            <h2 className="text-3xl font-bold mb-2 leading-tight">See something?<br/>Know its story.</h2>
+            <p className="text-sandstone-dark mb-8 text-sm max-w-[200px]">Use your camera to understand cultural objects instantly.</p>
+            
+            <Link href="/scan">
+              <Button variant="primary" size="lg" fullWidth className="gap-3 shadow-md shadow-saffron/30">
+                <ScanLine size={20} />
+                Scan Heritage
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Discover Section */}
+      <section className="px-6 py-4">
+        <div className="flex justify-between items-end mb-4">
+          <h3 className="text-lg font-bold text-charcoal">Discover Maharashtra</h3>
+          <Link href="/explore" className="text-saffron text-sm font-semibold flex items-center">
+            See all <ChevronRight size={16} />
+          </Link>
+        </div>
+
+        <div className="flex overflow-x-auto gap-4 pb-4 -mx-6 px-6 snap-x snap-mandatory hide-scrollbar">
+          {sites.map(site => (
+            <Link key={site.id} href={site.type === 'living_heritage' ? `/living-heritage/${site.id}` : `/heritage/${site.id}`} className="snap-start shrink-0 w-[240px]">
+              <Card className="h-full">
+                <div className="h-32 bg-sandstone-dark relative overflow-hidden flex items-center justify-center">
+                   {/* Placeholder for actual image */}
+                   <Camera size={32} className="text-charcoal/20" />
+                   <div className="absolute top-3 left-3">
+                     <Badge variant={site.type === 'living_heritage' ? 'warning' : 'default'}>
+                       {site.type.replace('_', ' ')}
+                     </Badge>
+                   </div>
+                </div>
+                <CardContent>
+                  <h4 className="font-bold text-charcoal mb-1">{site.name}</h4>
+                  <p className="text-xs text-charcoal-light line-clamp-2">{site.description}</p>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* Cultural Passport Preview */}
+      <section className="px-6 py-4">
+        <h3 className="text-lg font-bold text-charcoal mb-4">Your Cultural Passport</h3>
+        <Card className="bg-gradient-to-br from-sandstone to-sandstone-dark border-none">
+          <CardContent className="flex justify-between items-center">
+            <div>
+              <p className="text-xs text-charcoal-light font-semibold uppercase tracking-wider mb-1">Explorer Level</p>
+              <p className="font-bold text-charcoal text-xl">{user?.level || 'Cultural Explorer'}</p>
+              <div className="mt-3 flex gap-4">
+                <div>
+                  <p className="text-[10px] text-charcoal-light uppercase">Sites</p>
+                  <p className="font-semibold text-charcoal">{user?.sitesVisited || 0}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-charcoal-light uppercase">Contributions</p>
+                  <p className="font-semibold text-charcoal">{user?.contributions.length || 0}</p>
+                </div>
+              </div>
+            </div>
+            <Link href="/passport">
+              <div className="w-16 h-20 bg-saffron rounded-lg shadow-md flex items-center justify-center text-white rotate-6 hover:rotate-12 transition-transform">
+                <BookOpen size={24} />
+              </div>
+            </Link>
+          </CardContent>
+        </Card>
+      </section>
+      
+      {/* Hide scrollbar utility class */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      `}} />
+    </main>
+  )
 }

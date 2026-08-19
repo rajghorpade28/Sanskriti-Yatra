@@ -1,8 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fdfaf5; /* Sandstone off-white */
+  --foreground: #2b2b2b; /* Charcoal text */
+  
+  --color-sandstone: #fdfaf5;
+  --color-sandstone-dark: #f0ebe1;
+  --color-saffron: #e86b32;
+  --color-saffron-light: #f48c5a;
+  --color-muted-green: #607357;
+  --color-earth-brown: #8a6c52;
+  --color-charcoal: #2b2b2b;
+  --color-charcoal-light: #4a4a4a;
 }
 
 @theme inline {
@@ -10,17 +19,33 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  
+  --color-sandstone: var(--color-sandstone);
+  --color-sandstone-dark: var(--color-sandstone-dark);
+  --color-saffron: var(--color-saffron);
+  --color-saffron-light: var(--color-saffron-light);
+  --color-muted-green: var(--color-muted-green);
+  --color-earth-brown: var(--color-earth-brown);
+  --color-charcoal: var(--color-charcoal);
+  --color-charcoal-light: var(--color-charcoal-light);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
+  overscroll-behavior: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Safe area padding for bottom nav on notched phones */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }

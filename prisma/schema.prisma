@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String
+  level         String         @default("Cultural Explorer")
+  sitesVisited  Int            @default(0)
+  contributions Contribution[]
+  passportId    String?
+}
+
+model Site {
+  id              String   @id @default(cuid())
+  name            String
+  location        String
+  type            String   // "monumental" | "living_heritage"
+  description     String
+  crowdThreshold  Int
+  currentFootfall Int
+  status          String   // "NORMAL" | "HIGH_CROWD"
+  objects         HeritageObject[]
+  traditions      Tradition[]
+}
+
+model HeritageObject {
+  id                  String @id @default(cuid())
+  siteId              String
+  site                Site   @relation(fields: [siteId], references: [id])
+  name                String
+  period              String
+  culturalSignificance String
+  architecturalNote   String
+  relatedTraditionId  String?
+}
+
+model Tradition {
+  id          String @id @default(cuid())
+  siteId      String
+  site        Site   @relation(fields: [siteId], references: [id])
+  name        String
+  category    String // "craft" | "oral_history"
+  description String
+}
+
+model Contribution {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  traditionId  String?
+  title        String
+  type         String   // "audio_story"
+  audioUrl     String?
+  transcript   String?
+  translation  String?
+  language     String
+  status       String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  metadata     String?  // JSON string
+  createdAt    DateTime @default(now())
+}
