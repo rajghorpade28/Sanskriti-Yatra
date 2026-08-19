@@ -81,6 +81,16 @@ export async function POST(request: Request) {
       },
     })
 
+    // Log passport activity for contribution submission
+    await prisma.passportActivity.create({
+      data: {
+        userId: demoUser.id,
+        activityType: 'CONTRIBUTION',
+        title: `Submitted: ${title}`,
+        pointsEarned: 200,
+      },
+    })
+
     return NextResponse.json({
       success: true,
       contributionId: contribution.id,

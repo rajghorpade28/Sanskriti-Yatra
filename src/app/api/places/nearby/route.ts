@@ -4,7 +4,7 @@ import { placesService } from '@/services/placesService'
 
 const prisma = new PrismaClient()
 
-// Fixed fallback coordinates for Maharashtra sites
+// Fixed fallback coordinates for known Maharashtra heritage sites
 const SITE_COORDS: Record<string, { lat: number; lng: number }> = {
   ellora: { lat: 20.0268, lng: 75.1771 },
   ajanta: { lat: 20.5519, lng: 75.7033 },
@@ -17,6 +17,7 @@ export async function GET(request: Request) {
     const latParam = searchParams.get('lat')
     const lngParam = searchParams.get('lng')
     const siteIdParam = searchParams.get('siteId')
+    const siteNameParam = searchParams.get('siteName')
 
     let lat = 20.0268 // Default to Ellora Caves
     let lng = 75.1771
@@ -24,6 +25,19 @@ export async function GET(request: Request) {
     if (latParam && lngParam) {
       lat = parseFloat(latParam)
       lng = parseFloat(lngParam)
+    } else if (siteNameParam) {
+      // Match by site name substring
+      const lower = siteNameParam.toLowerCase()
+      if (lower.includes('paithan')) {
+        lat = SITE_COORDS.paithan.lat
+        lng = SITE_COORDS.paithan.lng
+      } else if (lower.includes('ajanta')) {
+        lat = SITE_COORDS.ajanta.lat
+        lng = SITE_COORDS.ajanta.lng
+      } else {
+        lat = SITE_COORDS.ellora.lat
+        lng = SITE_COORDS.ellora.lng
+      }
     } else if (siteIdParam) {
       const site = await prisma.site.findUnique({ where: { id: siteIdParam } })
       if (site) {
